@@ -1,3 +1,12 @@
+---
+title: Minecraft Seed Finder
+emoji: 🔍
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # Locate MineCraft structures from the seed
 
 Code and WASM are extracted/reversed from Chunk Base.
