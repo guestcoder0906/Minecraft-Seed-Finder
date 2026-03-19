@@ -4,6 +4,7 @@
   "description": " Find structures and features using minecraft seeds (Works up to 1.20.4) ",
   "main": "locator.js",
   "scripts": {
+    "start": "node index.js",
     "test": "node test_locator.js"
   },
   "repository": {
