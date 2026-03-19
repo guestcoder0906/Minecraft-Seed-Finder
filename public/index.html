@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Minecraft Seed Finder</title>
+  <link rel="icon" type="image/png" href="https://static-00.iconduck.com/assets.00/minecraft-icon-2048x2048-3ifq7gy7.png" />
+  <style>
+    /* Basic Reset and Styling */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: #1a1a1a; 
+      color: #e0e0e0; 
+    }
+    header { 
+      background: #2c3e50; 
+      padding: 15px; 
+      text-align: center; 
+      color: #fff; 
+      position: relative;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    #infoButton {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    #infoButton:hover {
+      transform: scale(1.1);
+    }
+    .container { 
+      display: flex; 
+      height: calc(100vh - 60px); 
+      gap: 20px;
+      padding: 20px;
+    }
+    #config-panel { 
+      width: 420px; 
+      background: #2d2d2d; 
+      border-radius: 10px;
+      padding: 20px; 
+      overflow-y: auto;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    #log-panel { 
+      flex: 1; 
+      background: #2d2d2d; 
+      border-radius: 10px;
+      padding: 20px; 
+      overflow-y: auto;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    h2 { 
+      margin-bottom: 20px; 
+      color: #3498db;
+      font-size: 1.5em;
+    }
+    .config-section { 
+      margin-bottom: 25px; 
+      padding: 15px;
+      background: #363636;
+      border-radius: 8px;
+    }
+    .config-section h3 { 
+      margin-bottom: 15px; 
+      color: #3498db;
+      font-size: 1.2em;
+    }
+    .config-item { 
+      margin-bottom: 15px; 
+    }
+    .config-item label { 
+      display: block; 
+      margin-bottom: 8px; 
+      color: #e0e0e0;
+      font-weight: 500;
+    }
+    .config-item input[type="number"],
+    .config-item select { 
+      width: 100%; 
+      padding: 10px; 
+      border: 1px solid #4a4a4a; 
+      border-radius: 6px;
+      background: #1a1a1a;
+      color: #e0e0e0;
+      transition: border-color 0.3s;
+    }
+    .config-item input[type="number"]:focus,
+    .config-item select:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    .list-container { 
+      border: 1px solid #4a4a4a; 
+      border-radius: 6px; 
+      padding: 12px; 
+      max-height: 150px; 
+      overflow-y: auto; 
+      background: #1a1a1a; 
+      margin-bottom: 12px;
+    }
+    .list-item { 
+      border-bottom: 1px solid #4a4a4a; 
+      padding: 8px 0; 
+    }
+    .list-item:last-child { 
+      border-bottom: none; 
+    }
+    .list-item button { 
+      background: #e74c3c; 
+      border: none; 
+      color: #fff; 
+      padding: 6px 12px; 
+      border-radius: 4px; 
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .list-item button:hover { 
+      background: #c0392b; 
+    }
+    button.add-btn, button#startScan, button#stopScan { 
+      width: 100%; 
+      padding: 12px; 
+      background: #3498db; 
+      border: none; 
+      color: #fff; 
+      border-radius: 6px; 
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 8px;
+      transition: background 0.3s, transform 0.2s;
+    }
+    button.add-btn:hover, button#startScan:hover, button#stopScan:hover { 
+      background: #2980b9;
+      transform: translateY(-2px);
+    }
+    #stopScan {
+      background: #e74c3c;
+    }
+    #stopScan:hover {
+      background: #c0392b;
+    }
+    #log-output { 
+      background: #1a1a1a; 
+      border: 1px solid #4a4a4a; 
+      padding: 15px; 
+      border-radius: 6px; 
+      height: 90vh; 
+      overflow-y: auto; 
+      white-space: pre-wrap;  /* This handles line breaks */
+      word-wrap: break-word;  /* Ensures long words break correctly */
+      font-family: 'Consolas', monospace;
+      color: #e0e0e0;
+    }
+    #overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      flex-direction: column;
+      backdrop-filter: blur(5px);
+    }
+    #overlay p { 
+      font-size: 24px; 
+      margin: 15px 0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    #overlay button { 
+      padding: 12px 24px;
+      background: #e74c3c;
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s, transform 0.2s;
+    }
+    #overlay button:hover { 
+      background: #c0392b;
+      transform: scale(1.05);
+    }
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1a1a1a;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4a4a4a;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    .toggle-container { display: flex; align-items: center; }
+    .toggle-container label { margin-left: 8px; font-weight: normal; color: #e0e0e0; }
+    .combo-container { border: 1px dashed #555; padding: 5px; margin-bottom: 8px; min-height: 30px; }
+    .combo-container span { background: #363636; padding: 3px 6px; border-radius: 3px; margin-right: 5px; color: #e0e0e0; }
+    .list-item > div { margin-bottom: 5px; }
+    .list-item label { font-weight: normal; margin-right: 5px; color: #e0e0e0; }
+    .list-item input[type="number"] { width: 60px; display: inline-block; }
+    .list-item select { width: 140px; display: inline-block; }
+
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Minecraft Seed Finder</h1>
+    <button id="infoButton" title="Click for config instructions">Guide ⓘ</button>
+  </header>
+  <div class="container">
+    <div id="config-panel">
+      <h2>Configuration</h2>
+      <!-- General Settings -->
+      <div class="config-section" id="general-config">
+        <h3>General</h3>
+        <div class="config-item">
+          <label for="version">Version:</label>
+          <select id="version">
+            <option value="1.21" selected>1.21</option>
+            <option value="1.20">1.20</option>
+            <option value="1.19">1.19</option>
+            <option value="1.18">1.18</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label for="edition">Edition:</label>
+          <select id="edition">
+            <option value="Java" selected>Java</option>
+            <option value="Bedrock">Bedrock</option>
+          </select>
+        </div>
+        <div class="config-item">
+          <label for="startingSeed">Starting Seed:</label>
+          <div style="display: flex; gap: 8px;" id="searchCenterInputs">
+            <input type="number" id="startingSeed" value="-9223372036854775807" step="1">
+            <button id="randomSeedBtn" title="Generate Random Seed" style="width: 40px; height: 40px; padding: 8px; display: flex; align-items: center; justify-content: center; background: #3498db; border: none; border-radius: 6px; cursor: pointer; transition: background 0.3s, transform 0.2s;">
+            <img src="https://static-00.iconduck.com/assets.00/random-icon-512x448-gmbp5j02.png" 
+               width="24" 
+               height="24" 
+               alt="Random Icon" 
+               style="filter: brightness(0) invert(1);">
+            </button>
+          </div>
+        </div>
+        <div class="config-item">
+          <label>Search Center:</label>
+          <div id="searchCenterInputs">
+            <input type="number" id="searchCenterX" value="0" placeholder="X" hidden>
+            <input type="number" id="searchCenterY" value="0" placeholder="Z" hidden>
+          </div>
+          <div class="toggle-container">
+            <input type="checkbox" id="useSpawnForSearchCenter" checked>
+            <label for="useSpawnForSearchCenter">Use Spawn for Search Center</label>
+          </div>
+        </div>
+      </div>
+      <!-- Structure Settings -->
+      <div class="config-section" id="structure-config">
+        <h3>Structures</h3>
+        <!-- Selected Structures -->
+        <div class="config-item">
+          <label for="selectedStructureDropdown">Add Selected Structure:</label>
+          <select id="selectedStructureDropdown"></select>
+          <button class="add-btn" id="addSelectedStructure">Add Selected Structure</button>
+          <div id="selectedStructuresList" class="list-container"></div>
+        </div>
+        <!-- Clustered Structures -->
+        <div class="config-item">
+          <label for="clusteredStructureDropdown">Add Clustered Structure:</label>
+          <select id="clusteredStructureDropdown"></select>
+          <button class="add-btn" id="addClusteredStructure">Add Clustered Structure</button>
+          <div id="clusteredStructuresList" class="list-container"></div>
+        </div>
+        <!-- Invalid Cluster Combination (multi-item) -->
+        <div class="config-item">
+          <h4>Invalid Cluster Combination (Structures):</h4>
+          <div id="currentInvalidCombo" class="combo-container"></div>
+          <select id="invalidComboDropdown"></select>
+          <button class="add-btn" id="addToInvalidCombo">Add to Combination</button>
+          <button class="add-btn" id="saveInvalidCombo" style="display:none;">Save Combination</button>
+          <div id="invalidClusterList" class="list-container"></div>
+        </div>
+        <div class="config-item">
+          <label for="minClusterCount">Min Cluster Count:</label>
+          <input type="number" id="minClusterCount" value="2">
+        </div>
+        <div class="config-item">
+          <label for="clusterMaxRange">Cluster Max Range:</label>
+          <input type="number" id="clusterMaxRange" value="32">
+        </div>
+      </div>
+      <!-- Biome Settings -->
+      <div class="config-section" id="biome-config">
+        <h3>Biomes</h3>
+        <!-- Required Biomes (single add) -->
+        <div class="config-item">
+          <label for="requiredBiomeDropdown">Add Required Biome:</label>
+          <select id="requiredBiomeDropdown"></select>
+          <button class="add-btn" id="addRequiredBiome">Add Required Biome</button>
+          <div id="requiredBiomesList" class="list-container"></div>
+        </div>
+        <!-- Clustered Biomes Combination (multi-item) -->
+        <div class="config-item">
+          <h4>Clustered Biomes Combination:</h4>
+          <div id="currentClusteredBiomeCombo" class="combo-container"></div>
+          <select id="clusteredBiomeComboDropdown"></select>
+          <button class="add-btn" id="addToClusteredBiomeCombo">Add to Combination</button>
+          <button class="add-btn" id="saveClusteredBiomeCombo" style="display:none;">Save Combination</button>
+          <div id="clusteredBiomesList" class="list-container"></div>
+        </div>
+      </div>
+      <!-- Scan Options -->
+      <div class="config-section" id="scan-config">
+        <h3>Scan Options</h3>
+        <div class="config-item">
+          <div class="toggle-container">
+            <input type="checkbox" id="autoStop" checked>
+            <label for="autoStop">Auto Stop</label>
+          </div>
+        </div>
+        <div class="config-item" id="targetCountContainer">
+          <label for="targetCount">Target Count:</label>
+          <input type="number" id="targetCount" value="1">
+        </div>
+        <div class="config-item">
+          <label for="searchDistance">Search Distance (max 10000):</label>
+          <input type="number" id="searchDistance" value="1000" max="10000">
+        </div>
+      </div>
+      <button id="startScan">Start Scan</button>
+      <button id="stopScan">Stop Scan</button>
+    </div>
+    <div id="log-panel">
+      <div style="display: flex; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0; flex-grow: 1;">Scan Log</h2>
+        <button id="clearLogs" style="padding: 8px 16px; background: #3498db; border: none; color: #fff; border-radius: 4px; cursor: pointer; font-size: 14px; transition: background 0.3s;">Clear Logs</button>
+      </div>
+      <div id="log-output"></div>
+    </div>
+  </div>
+  <!-- Overlay for live scanning info -->
+  <div id="overlay">
+    <p hidden id="overlayText">Elapsed Time: 0 sec, Seeds Scanned: 0</p>
+    <button id="overlayStop">Stop Scan</button>
+  </div>
+  <script>
+    // Full lists for Java 1.21 Overworld
+    const availableStructures = [
+      "buriedTreasure", "dungeon", "stronghold", "village", "mineshaft",
+      "woodlandMansion", "pillagerOutpost", "oceanRuin", "oceanMonument",
+      "shipwreck", "desertTemple", "jungleTemple", "witchHut", "igloo",
+      "ruinedPortalOverworld", "spawn", "fossil", "ravine", "endGateway",
+      "amethystGeode", "ancientCity", "itemOverworld", "oreVein", "cave",
+      "desertWell", "trailRuin"
+    ];
+    const availableBiomes = [
+      "Ocean", "Plains", "Desert", "Windswept Hills", "Forest", "Taiga", "Swamp", "River",
+      "Frozen Ocean", "Frozen River", "Snowy Plains", "Snowy Mountains", "Mushroom Fields",
+      "Mushroom Fields Shore", "Beach", "Desert Hills", "Windswept Forest", "Taiga Hills",
+      "Mountain Edge", "Jungle", "Jungle Hills", "Sparse Jungle", "Deep Ocean", "Stony Shore",
+      "Snowy Beach", "Birch Forest", "Birch Forest Hills", "Dark Forest", "Snowy Taiga",
+      "Snowy Taiga Hills", "Old Growth Pine Taiga", "Giant Tree Taiga Hills", "Wooded Mountains",
+      "Savanna", "Savanna Plateau", "Badlands", "Wooded Badlands", "Badlands Plateau", "Warm Ocean",
+      "Lukewarm Ocean", "Cold Ocean", "Deep Warm Ocean", "Deep Lukewarm Ocean", "Deep Cold Ocean",
+      "Deep Frozen Ocean", "Sunflower Plains", "Desert Lakes", "Windswept Gravelly Hills", "Flower Forest",
+      "Taiga Mountains", "Swamp Hills", "Ice Spikes", "Modified Jungle", "Modified Jungle Edge",
+      "Old Growth Birch Forest", "Tall Birch Hills", "Dark Forest Hills", "Snowy Taiga Mountains",
+      "Old Growth Spruce Taiga", "Giant Spruce Taiga Hills", "Gravelly Mountains+", "Windswept Savanna",
+      "Shattered Savanna Plateau", "Eroded Badlands", "Modified Wooded Badlands Plateau", "Modified Badlands Plateau",
+      "Bamboo Jungle", "Bamboo Jungle Hills", "Dripstone Caves", "Lush Caves", "Meadow", "Grove",
+      "Snowy Slopes", "Frozen Peaks", "Jagged Peaks", "Stony Peaks", "Deep Dark", "Mangrove Swamp",
+      "Cherry Grove", "Pale Garden", "Island", "Encircling Terrain", "Valley",
+    ];
+
+    // Populate dropdowns
+    function populateDropdown(selectId, options) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = "";
+      options.forEach(option => {
+        const opt = document.createElement("option");
+        opt.value = option;
+        opt.innerText = option;
+        select.appendChild(opt);
+      });
+    }
+    populateDropdown("selectedStructureDropdown", availableStructures);
+    populateDropdown("clusteredStructureDropdown", availableStructures);
+    populateDropdown("invalidComboDropdown", availableStructures);
+    populateDropdown("requiredBiomeDropdown", availableBiomes);
+    populateDropdown("clusteredBiomeComboDropdown", availableBiomes);
+
+    // Global config – default requiredBiomes is empty and detectBiomes is off by default
+    let config = {
+      version: "1.21",
+      edition: "Java",
+      startingSeed: BigInt("-9097050763759199217"),
+      seedRangeMin: BigInt("-9223372036854775807"),
+      seedRangeMax: BigInt("9223372036854775807"),
+      searchCenter: [0, 0],
+      useSpawnForSearchCenter: true,
+      selectedStructures: [],
+      clusteredStructures: [],
+      minClusterCount: 2,
+      requiredBiomes: [],
+      clusteredBiomes: [],
+      invalidClusterCombinations: [],
+      clusterMaxRange: 32,
+      autoStop: true,
+      targetCount: 1,
+      detectBiomes: false, // toggle off by default
+      searchDistance: 1000,
+      // Advanced (hidden)
+      tileSize: 16,
+      tileScale: 0.25,
+      biomeHeight: "worldSurface",
+      roughTerrainWindowSize: 3,
+      roughTerrainVarianceThreshold: 50,
+      plateauBoundaryHighPercentage: 0.8,
+      plateauHeightDiffThreshold: 16,
+      mountainEncirclementHeightDiffThreshold: 8
+    };
+
+    document.getElementById("useSpawnForSearchCenter").addEventListener("change", (e) => {
+      document.getElementById("searchCenterX").style.display = e.target.checked ? "none" : "block";
+      document.getElementById("searchCenterY").style.display = e.target.checked ? "none" : "block";
+    });
+
+    // --- STRUCTURE CONFIGURATION ---
+    function addSelectedStructureItem(structure) {
+      const container = document.getElementById("selectedStructuresList");
+      const div = document.createElement("div");
+      div.className = "list-item";
+      div.innerHTML = `
+        <div><strong>${structure}</strong></div>
+        <div>
+          <label>Min Count: <input type="number" class="min-count" value="1"></label>
+        </div>
+        <div>
+          <label>Biome: 
+            <select class="structure-biome">
+              <option value="">None</option>
+              ${availableBiomes.map(b => `<option value="${b}">${b}</option>`).join("")}
+            </select>
+          </label>
+        </div>
+        <div class="biome-size-container" style="display: none;">
+          <label>Min Biome Size: <input type="number" class="min-size" placeholder="optional"></label>
+          <label>Max Biome Size: <input type="number" class="max-size" placeholder="optional"></label>
+        </div>
+        <div>
+          <label>Min Height: <input type="number" class="min-height" placeholder="optional"></label>
+        </div>
+        <div>
+          <label>Max Height: <input type="number" class="max-height" placeholder="optional"></label>
+        </div>
+        <button class="removeItem">Remove</button>
+      `;
+
+      // Event listener to toggle biome size visibility based on biome selection
+      const biomeSelect = div.querySelector(".structure-biome");
+      const biomeSizeContainer = div.querySelector(".biome-size-container");
+
+      biomeSelect.addEventListener("change", () => {
+        if (biomeSelect.value) {
+          biomeSizeContainer.style.display = "block";
+        } else {
+          biomeSizeContainer.style.display = "none";
+          // Clear the values if biome is set to "None"
+          div.querySelector(".min-size").value = "";
+          div.querySelector(".max-size").value = "";
+        }
+      });
+
+      // Remove button functionality
+      div.querySelector(".removeItem").addEventListener("click", () => {
+        container.removeChild(div);
+        updateSelectedStructures();
+      });
+
+      container.appendChild(div);
+      updateSelectedStructures();
+    }
+
+    function addClusteredStructureItem(structure) {
+      const container = document.getElementById("clusteredStructuresList");
+      const div = document.createElement("div");
+      div.className = "list-item";
+      div.innerHTML = `<div>${structure}</div><button class="removeItem">Remove</button>`;
+      div.querySelector(".removeItem").addEventListener("click", () => {
+        container.removeChild(div);
+        updateClusteredStructures();
+      });
+      container.appendChild(div);
+      updateClusteredStructures();
+    }
+
+    // --- INVALID CLUSTER COMBINATION (Structures) ---
+    let currentInvalidCombo = [];
+    document.getElementById("addToInvalidCombo").addEventListener("click", () => {
+      const structure = document.getElementById("invalidComboDropdown").value;
+      if (!currentInvalidCombo.includes(structure)) {
+        currentInvalidCombo.push(structure);
+        renderCombo("currentInvalidCombo", currentInvalidCombo);
+      }
+      document.getElementById("saveInvalidCombo").style.display = currentInvalidCombo.length >= 2 ? "block" : "none";
+    });
+    document.getElementById("saveInvalidCombo").addEventListener("click", () => {
+      if (currentInvalidCombo.length >= 2) {
+        addInvalidClusterItem(currentInvalidCombo);
+        currentInvalidCombo = [];
+        renderCombo("currentInvalidCombo", currentInvalidCombo);
+        document.getElementById("saveInvalidCombo").style.display = "none";
+      } else {
+        alert("Please add at least two structures for a combination.");
+      }
+    });
+    function renderCombo(containerId, comboArray) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      comboArray.forEach(item => {
+        const span = document.createElement("span");
+        span.innerText = item;
+        container.appendChild(span);
+      });
+    }
+    function addInvalidClusterItem(structureCombo) {
+      const container = document.getElementById("invalidClusterList");
+      const div = document.createElement("div");
+      div.className = "list-item";
+      div.innerHTML = `<div>${structureCombo.join(" + ")}</div><button class="removeItem">Remove</button>`;
+      div.querySelector("button").addEventListener("click", () => {
+        container.removeChild(div);
+        updateInvalidClusters();
+      });
+      container.appendChild(div);
+      updateInvalidClusters();
+    }
+    function updateInvalidClusters() {
+      config.invalidClusterCombinations = [];
+      document.getElementById("invalidClusterList").querySelectorAll(".list-item > div").forEach(div => {
+        const parts = div.innerText.split(" + ");
+        config.invalidClusterCombinations.push(parts);
+      });
+    }
+
+    // --- BIOME CONFIGURATION ---
+    // Updated addRequiredBiomeItem – include optional min/max patch size inputs
+    function addRequiredBiomeItem(biome) {
+      const container = document.getElementById("requiredBiomesList");
+      const div = document.createElement("div");
+      div.className = "list-item";
+      div.innerHTML = `
+        <div>
+          <strong>${biome}</strong>
+          <div>
+            <label>Min Patch Size: <input type="number" class="min-patch" placeholder="Optional"></label>
+            <label>Max Patch Size: <input type="number" class="max-patch" placeholder="Optional"></label>
+          </div>
+          <button class="removeItem">Remove</button>
+        </div>
+      `;
+      // When the remove button is clicked, update config
+      div.querySelector(".removeItem").addEventListener("click", () => {
+        container.removeChild(div);
+        updateRequiredBiomes();
+      });
+      // Attach change listeners to update config when user edits the inputs
+      div.querySelector(".min-patch").addEventListener("change", updateRequiredBiomes);
+      div.querySelector(".max-patch").addEventListener("change", updateRequiredBiomes);
+      container.appendChild(div);
+      updateRequiredBiomes();
+    }
+    let currentClusteredBiomeCombo = [];
+    document.getElementById("addToClusteredBiomeCombo").addEventListener("click", () => {
+      const biome = document.getElementById("clusteredBiomeComboDropdown").value;
+      if (!currentClusteredBiomeCombo.includes(biome)) {
+        currentClusteredBiomeCombo.push(biome);
+        renderCombo("currentClusteredBiomeCombo", currentClusteredBiomeCombo);
+      }
+      document.getElementById("saveClusteredBiomeCombo").style.display = currentClusteredBiomeCombo.length >= 2 ? "block" : "none";
+    });
+    document.getElementById("saveClusteredBiomeCombo").addEventListener("click", () => {
+      if (currentClusteredBiomeCombo.length >= 2) {
+        addClusteredBiomeItem(currentClusteredBiomeCombo);
+        currentClusteredBiomeCombo = [];
+        renderCombo("currentClusteredBiomeCombo", currentClusteredBiomeCombo);
+        document.getElementById("saveClusteredBiomeCombo").style.display = "none";
+      } else {
+        alert("Please add at least two biomes for a combination.");
+      }
+    });
+    // Updated addClusteredBiomeItem – include optional min/max patch size inputs for biome combos
+    function addClusteredBiomeItem(biomeCombo) {
+      const container = document.getElementById("clusteredBiomesList");
+      const div = document.createElement("div");
+      div.className = "list-item";
+      div.innerHTML = `
+        <div>
+          <strong>${biomeCombo.join(" + ")}</strong>
+          <div>
+            <label>Min Patch Size: <input type="number" class="min-patch" placeholder="Optional"></label>
+            <label>Max Patch Size: <input type="number" class="max-patch" placeholder="Optional"></label>
+          </div>
+          <button class="removeItem">Remove</button>
+        </div>
+      `;
+      div.querySelector(".removeItem").addEventListener("click", () => {
+        container.removeChild(div);
+        updateClusteredBiomes();
+      });
+      // Attach change listeners to update config when user edits the inputs
+      div.querySelector(".min-patch").addEventListener("change", updateClusteredBiomes);
+      div.querySelector(".max-patch").addEventListener("change", updateClusteredBiomes);
+      container.appendChild(div);
+      updateClusteredBiomes();
+    }
+    // Updated updateRequiredBiomes – now stores each required biome as an object
+    function updateRequiredBiomes() {
+      config.requiredBiomes = [];
+      document.getElementById("requiredBiomesList").querySelectorAll(".list-item").forEach(div => {
+        const biome = div.querySelector("strong").innerText;
+        const minPatchInput = div.querySelector(".min-patch").value;
+        const maxPatchInput = div.querySelector(".max-patch").value;
+
+        const minPatch = minPatchInput.trim() !== "" ? Number(minPatchInput) : null;
+        const maxPatch = maxPatchInput.trim() !== "" ? Number(maxPatchInput) : null;
+
+        config.requiredBiomes.push({ biome: biome, minPatch: minPatch, maxPatch: maxPatch });
+      });
+    }
+    // Updated updateClusteredBiomes – stores each combo as an object with fields: biomes, minPatch, maxPatch
+    function updateClusteredBiomes() {
+      config.clusteredBiomes = [];
+      document.getElementById("clusteredBiomesList").querySelectorAll(".list-item").forEach(div => {
+        const biomeComboText = div.querySelector("strong").innerText;
+        const biomes = biomeComboText.split(" + ").map(b => b.trim());
+        const minPatchInput = div.querySelector(".min-patch").value;
+        const maxPatchInput = div.querySelector(".max-patch").value;
+
+        const minPatch = minPatchInput.trim() !== "" ? Number(minPatchInput) : null;
+        const maxPatch = maxPatchInput.trim() !== "" ? Number(maxPatchInput) : null;
+
+        config.clusteredBiomes.push({ biomes: biomes, minPatch: minPatch, maxPatch: maxPatch });
+      });
+    }
+    // --- UPDATE FUNCTIONS FOR SIMPLE STRUCTURE LISTS ---
+    function updateSelectedStructures() {
+      config.selectedStructures = [];
+      document.getElementById("selectedStructuresList").querySelectorAll(".list-item").forEach(div => {
+        const structure = div.querySelector("strong").innerText;
+        const minCount = Number(div.querySelector(".min-count").value);
+        const biome = div.querySelector(".structure-biome").value;
+        const minHeightStr = div.querySelector(".min-height").value;
+        const maxHeightStr = div.querySelector(".max-height").value;
+        const minSizeStr = div.querySelector(".min-size").value;
+        const maxSizeStr = div.querySelector(".max-size").value;
+
+        const criteria = {};
+        if (biome && biome.trim() !== "") {
+          criteria.biome = biome;
+        }
+        if (minHeightStr.trim() !== "") {
+          criteria.minHeight = Number(minHeightStr);
+        }
+        if (maxHeightStr.trim() !== "") {
+          criteria.maxHeight = Number(maxHeightStr);
+        }
+        if (minSizeStr.trim() !== "") {
+          criteria.minSize = Number(minSizeStr);
+        }
+        if (maxSizeStr.trim() !== "") {
+          criteria.maxSize = Number(maxSizeStr);
+        }
+
+        config.selectedStructures.push([structure, minCount, criteria]);
+      });
+    }
+
+    function updateClusteredStructures() {
+      config.clusteredStructures = [];
+      document.getElementById("clusteredStructuresList").querySelectorAll(".list-item > div").forEach(div => {
+        config.clusteredStructures.push(div.innerText);
+      });
+    }    // --- EVENT LISTENERS FOR SIMPLE ADDITIONS ---
+    document.getElementById("addSelectedStructure").addEventListener("click", () => {
+      const structure = document.getElementById("selectedStructureDropdown").value;
+      addSelectedStructureItem(structure);
+    });
+    document.getElementById("addClusteredStructure").addEventListener("click", () => {
+      const structure = document.getElementById("clusteredStructureDropdown").value;
+      addClusteredStructureItem(structure);
+    });
+    document.getElementById("addRequiredBiome").addEventListener("click", () => {
+      const biome = document.getElementById("requiredBiomeDropdown").value;
+      addRequiredBiomeItem(biome);
+    });
+
+    // --- TOGGLE TARGET COUNT ---
+    document.getElementById("autoStop").addEventListener("change", (e) => {
+      document.getElementById("targetCountContainer").style.display = e.target.checked ? "block" : "none";
+    });
+
+    // --- UPDATE CONFIG FROM UI ---
+    // --- UPDATE CONFIG FROM UI ---
+    function updateConfigFromUI() {
+      config.version = document.getElementById("version").value;
+      config.edition = document.getElementById("edition").value;
+      config.startingSeed = BigInt(document.getElementById("startingSeed").value);
+      const x = Number(document.getElementById("searchCenterX").value);
+      const y = Number(document.getElementById("searchCenterY").value);
+      config.searchCenter = [x, y];
+      config.useSpawnForSearchCenter = document.getElementById("useSpawnForSearchCenter").checked;
+      config.minClusterCount = Number(document.getElementById("minClusterCount").value);
+      config.clusterMaxRange = Number(document.getElementById("clusterMaxRange").value);
+      config.autoStop = document.getElementById("autoStop").checked;
+      config.targetCount = Number(document.getElementById("targetCount").value);
+      config.searchDistance = Number(document.getElementById("searchDistance").value);
+
+      // ** NEW: Update selected structures so that min/max heights are refreshed **
+      updateSelectedStructures();
+
+      const hasBiomeInStructures = config.selectedStructures.some(struct => struct[2] && struct[2].biome);
+
+      config.detectBiomes = (document.getElementById("requiredBiomesList").childElementCount > 0) ||
+                            (document.getElementById("clusteredBiomesList").childElementCount > 0) ||
+                            hasBiomeInStructures;
+    }
+
+    // --- LOGGING ---
+    function logMessage(msg) {
+      const logOutput = document.getElementById("log-output");
+
+      // Replace newline characters with <br> for proper HTML rendering
+      const formattedMsg = msg.replace(/\n/g, "<br>");
+
+      // Create a new div and insert the formatted message
+      const newLine = document.createElement("div");
+      newLine.innerHTML = formattedMsg;
+
+      logOutput.appendChild(newLine);
+      logOutput.scrollTop = logOutput.scrollHeight;  // Auto-scroll to the latest message
+    }
+
+    // --- INFO BUTTON ---
+    document.getElementById("infoButton").addEventListener("click", () => {
+      alert(`Guide:
+- Make sure to set requirements before scanning for a seed
+- Select game version (1.18–1.21) and edition (Java or Bedrock).
+- Set a starting seed and define a search center using specific coordinates or the spawn point.
+- Specify search distance up to 10,000 blocks.
+- Specify if start of search starts from spawn or set coords.
+(Clusters means structures/biomes that are next to each other)
+
+Structure Configuration:
+- Add selected structures with options for minimum count, specific biomes, biome sizes, and custom height ranges.
+- Define clustered structures (A group of structures close to each other) by setting minimum cluster counts and maximum cluster ranges.
+- Exclude unwanted groupings using invalid cluster combinations.
+
+Biome Configuration:
+- Add required biomes individually or as clustered biome combinations.
+- Include custom biomes like Islands, Valleys, and Encircling Terrain.
+- Set size requirements for biome/clustered biomes
+
+Scan Options:
+- Enable auto-stop after finding a target number of seeds.
+- Adjust target seed count`);
+    });
+
+    // --- OVERLAY FOR LIVE SCANNING INFO ---
+    const overlay = document.getElementById("overlay");
+    const overlayText = document.getElementById("overlayText");
+    const overlayStop = document.getElementById("overlayStop");
+    function showOverlay() {
+      overlay.style.display = "flex";
+    }
+    function hideOverlay() {
+      overlay.style.display = "none";
+    }
+    function updateOverlayLive(elapsed, seedsScanned) {
+      overlayText.innerText = `Elapsed Time: ${elapsed}, Seeds Scanned: ${seedsScanned}`;
+    }
+
+    // Clear Logs Button Functionality
+    document.getElementById("clearLogs").addEventListener("click", () => {
+      document.getElementById("log-output").innerHTML = "";  // Use innerHTML to fully clear
+    });
+
+    // --- SSE CONNECTION ---
+    let eventSource = null;
+    document.getElementById("startScan").addEventListener("click", () => {
+      updateConfigFromUI();
+      const configForServer = {
+        version: config.version,
+        edition: config.edition,
+        startingSeed: config.startingSeed.toString(),
+        seedRangeMin: config.seedRangeMin.toString(),
+        seedRangeMax: config.seedRangeMax.toString(),
+        searchCenter: config.searchCenter,
+        useSpawnForSearchCenter: config.useSpawnForSearchCenter,
+        selectedStructures: config.selectedStructures,
+        clusteredStructures: config.clusteredStructures,
+        minClusterCount: config.minClusterCount,
+        requiredBiomes: config.requiredBiomes,
+        clusteredBiomes: config.clusteredBiomes,
+        invalidClusterCombinations: config.invalidClusterCombinations,
+        clusterMaxRange: config.clusterMaxRange,
+        autoStop: config.autoStop,
+        targetCount: config.targetCount,
+        detectBiomes: config.detectBiomes,
+        searchDistance: config.searchDistance,
+        tileSize: config.tileSize,
+        tileScale: config.tileScale,
+        biomeHeight: config.biomeHeight,
+        roughTerrainWindowSize: config.roughTerrainWindowSize,
+        roughTerrainVarianceThreshold: config.roughTerrainVarianceThreshold,
+        plateauBoundaryHighPercentage: config.plateauBoundaryHighPercentage,
+        plateauHeightDiffThreshold: config.plateauHeightDiffThreshold,
+        mountainEncirclementHeightDiffThreshold: config.mountainEncirclementHeightDiffThreshold
+      };
+      const configStr = encodeURIComponent(JSON.stringify(configForServer));
+      showOverlay();
+      if (eventSource !== null) { eventSource.close(); }
+      eventSource = new EventSource("/scan?config=" + configStr);
+      eventSource.onmessage = function(event) {
+        const msg = event.data;
+
+        if (msg === "END_OF_SCAN") {
+          //logMessage("Scan completed automatically.");
+          if (eventSource) {
+            //eventSource.close();
+           // eventSource = null;
+          }
+          hideOverlay();
+        } else {
+        //console.log("Received from backend:", event.data);  // Debug log
+        logMessage(event.data);
+        }
+      };
+      eventSource.onerror = function(event) {
+        console.error("EventSource error", event);
+        eventSource.close();
+        hideOverlay();
+      };
+    });
+
+    overlayStop.addEventListener("click", () => {
+      if (eventSource !== null) {
+        eventSource.close();
+        eventSource = null;
+        logMessage("Scan stopped by user.");
+        hideOverlay();
+      }
+    });
+
+    // Override console logging to use browser console only.
+    const originalLog = console.log;
+    console.log = function(...args) { originalLog.apply(console, args); };
+    console.error = function(...args) { originalLog.apply(console, args); };
+
+    function stopScan() {
+      if (eventSource !== null) {
+        console.log("Closing SSE connection...");
+        eventSource.close();
+        eventSource = null;
+        logMessage("Stopping scan on backend...");
+
+        // Send a POST request to stop the scan for this user session
+        fetch("/stop", { method: "POST" })
+          .then(response => response.text())
+          .then(msg => {
+            logMessage(msg);
+            hideOverlay();
+          })
+          .catch(err => {
+            console.error("Error stopping scan:", err);
+            hideOverlay();
+          });
+      }
+    }
+
+    // Bind stop logic to buttons and unload events
+    document.getElementById("stopScan").addEventListener("click", stopScan);
+    document.getElementById("overlayStop").addEventListener("click", stopScan);
+    window.addEventListener("beforeunload", stopScan);
+
+    // Stop scan when the user leaves the page (refreshes or closes the tab)
+    window.addEventListener("beforeunload", () => {
+      if (eventSource !== null) {
+        console.log("User is leaving the page, closing SSE connection...");
+        eventSource.close();
+        eventSource = null;
+      }
+    });
+
+    // Random seed button functionality
+    document.getElementById("randomSeedBtn").addEventListener("click", () => {
+      const minSeed = BigInt(config.seedRangeMin);
+      const maxSeed = BigInt(config.seedRangeMax);
+      const randomSeed = minSeed + BigInt(Math.floor(Math.random() * (Number(maxSeed - minSeed))));
+      document.getElementById("startingSeed").value = randomSeed.toString();
+    });
+  </script>
+</body>
+</html>
