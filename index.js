@@ -1340,7 +1340,9 @@ async function scanSeeds(sendLog, isActive, config) {
               }
             }
           }
-          if (cluster.length >= 2) {
+          const typesInCluster = new Set(cluster.map(s => s.type));
+          const hasAllTypes = config.clusteredStructures.every(t => typesInCluster.has(t));
+          if (cluster.length >= config.minClusterCount && hasAllTypes) {
             structureClusters.push(cluster);
           }
         }
@@ -1510,7 +1512,52 @@ async function scanSeeds(sendLog, isActive, config) {
             }
             clusters.push(cluster);
           }
-          const validClusters = clusters.filter(cluster => cluster.length >= minPatch && cluster.length <= maxPatch);
+          let hasCustom = false;
+          let islands = [], plateaus = [], valleysLog = [];
+          if (targetBiomes.includes("Island")) { hasCustom = true; islands = detectIslands(biomeData); }
+          if (targetBiomes.includes("Encircling Terrain")) { hasCustom = true; plateaus = detectEncirclingTerrains(biomeData, config); }
+          if (targetBiomes.includes("Valley")) { hasCustom = true; valleysLog = detectValleys(biomeData, config); }
+          
+          let validClusters;
+          if (filteredPatches.length === 0 && hasCustom) {
+            // Only custom biomes were requested in this cluster.
+            // For now, if any of the custom biomes matched their own detection, we just count it as valid if all custom biomes exist.
+            let customAllExist = true;
+            if (targetBiomes.includes("Island") && islands.length === 0) customAllExist = false;
+            if (targetBiomes.includes("Encircling Terrain") && plateaus.length === 0) customAllExist = false;
+            if (targetBiomes.includes("Valley") && valleysLog.length === 0) customAllExist = false;
+            validClusters = customAllExist ? [[{ biomeName: "Custom", mainCoord: [config.searchCenter[0], config.searchCenter[1]] }]] : [];
+          } else {
+            validClusters = clusters.filter(cluster => {
+              if (cluster.length < minPatch || cluster.length > maxPatch) return false;
+              const cbNames = new Set(cluster.map(p => p.biomeName));
+              for (const tb of targetBiomes) {
+                if (tb === "Island" || tb === "Encircling Terrain" || tb === "Valley") continue;
+                if (!cbNames.has(tb)) return false;
+              }
+              // If there's a custom biome, check distance from cluster center to the custom biome center
+              if (hasCustom) {
+                const centerGridX = cluster.reduce((sum, p) => sum + p.gridCoord[0], 0) / cluster.length;
+                const centerGridZ = cluster.reduce((sum, p) => sum + p.gridCoord[1], 0) / cluster.length;
+                const worldX = biomeData.worldStartX + centerGridX * 16;
+                const worldZ = biomeData.worldStartZ + centerGridZ * 16;
+                let customOverlap = true;
+                if (targetBiomes.includes("Island")) {
+                  if (!islands.some(isl => Math.sqrt(Math.pow(isl.center[0] - worldX, 2) + Math.pow(isl.center[1] - worldZ, 2)) < config.searchDistance/2)) customOverlap = false;
+                }
+                if (targetBiomes.includes("Encircling Terrain")) {
+                  if (!plateaus.some(plat => Math.sqrt(Math.pow(plat.center[0] - worldX, 2) + Math.pow(plat.center[1] - worldZ, 2)) < config.searchDistance/2)) customOverlap = false;
+                }
+                if (targetBiomes.includes("Valley")) {
+                   // Valleys is complicated; we'll basic check if ANY valley exists if requested in cluster
+                   if (valleysLog.length === 0) customOverlap = false;
+                }
+                if (!customOverlap) return false;
+              }
+              return true;
+            });
+          }
+          
           if (validClusters.length === 0) {
             meetsClusteredBiomes = false;
             break;
