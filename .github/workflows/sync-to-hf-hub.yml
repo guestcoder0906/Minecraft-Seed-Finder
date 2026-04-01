@@ -13,4 +13,4 @@ jobs:
       - name: Push to Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push https://SoftChinchilla:$HF_TOKEN@huggingface.co/spaces/SlinkyFerret/MC-SeedFinder main 
+        run: git push https://SlinkyFerret:$HF_TOKEN@huggingface.co/spaces/SlinkyFerret/MC-SeedFinder main 
