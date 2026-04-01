@@ -1,0 +1,47 @@
+name: Keep HuggingFace Alive and Sync
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Run daily at midnight UTC
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+  push:
+    branches:
+      - main # Or your default branch name
+      - master
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Ping Hugging Face Space
+        run: |
+          echo "Pinging Hugging Face Space to prevent it from sleeping..."
+          # Replace with the exact URL of your space if different
+          curl -s -L https://huggingface.co/spaces/SlinkyFerret/MC-SeedFinder > /dev/null
+          curl -s -L https://huggingface.co/spaces/SlinkyFerret/Javacube > /dev/null
+          echo "Pinged successfully."
+
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN secret is not set! Skipping deployment."
+            exit 1
+          fi
+
+          echo "Configuring git and syncing to Hugging Face Space..."
+          git config --global user.email "bot@example.com"
+          git config --global user.name "HuggingFace Sync Bot"
+          
+          # Attempt to push to the MC-SeedFinder space
+          git push -f "https://SlinkyFerret:${HF_TOKEN}@huggingface.co/spaces/SlinkyFerret/MC-SeedFinder.git" main
+          
+          # If you also migrated to Javacube, you can uncomment the next line to deploy there as well:
+          # git push -f "https://SlinkyFerret:${HF_TOKEN}@huggingface.co/spaces/SlinkyFerret/Javacube.git" main
